@@ -7,8 +7,7 @@ PATH = os.getcwd()
 DATA_PATH = os.path.join(PATH, 'data')
 
 monedas: np.ndarray =  cv2.imread(os.path.join(DATA_PATH,'monedas.jpg'))
-monedas_hsv: np.ndarray = cv2.cvtColor(monedas, cv2.COLOR_BGR2HSV)
-monedas_gray: np.ndarray = cv2.cvtColor(monedas_hsv, cv2.COLOR_HSV2GRAY)
+monedas_gray: np.ndarray = cv2.cvtColor(monedas, cv2.COLOR_BGR2GRAY)
 
 plt.imshow(monedas, cmap='gray')
 plt.show()
@@ -19,6 +18,7 @@ detected_circles = cv2.HoughCircles(monedas_blur,
                    cv2.HOUGH_GRADIENT, 1.2, 100, param1 = 100, 
                param2 = 150, minRadius = 70, maxRadius = 200)     
 
+print(f'Circles detected: {detected_circles}')
 
 if detected_circles is not None:
     # Convert the circle parameters a, b and r to integers.
