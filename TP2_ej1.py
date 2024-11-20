@@ -43,7 +43,7 @@ if detected_circles is not None:
 monedas_with_circles_rgb = cv2.cvtColor(monedas_with_circles, cv2.COLOR_BGR2RGB)
 
 # Display the result using Matplotlib
-plt.imshow(monedas_with_circles_rgb, cmap='gray')
+plt.imshow(monedas_with_circles_rgb)
 plt.axis("off")  # Hide the axes
 plt.title("Detected Circles")
 plt.show()
@@ -59,23 +59,12 @@ plt.axis('off')  # Desactivar los ejes
 plt.title("Binarized Image (0 and 1)")
 plt.show()
 
-
-mask = monedas_negras == 255
-monedas_selected = monedas_gray.copy()
-monedas_selected[mask] = 0  # Establecer los valores de monedas_selected a 0 donde la máscara es True
+mask = monedas_negras == 0
+monedas_selected = monedas.copy()
+monedas_selected[~mask] = 0  # Establecer los valores de monedas_selected a 0 donde la máscara es True
 
 # Mostrar la imagen final con solo los píxeles seleccionados de monedas_gray
 plt.imshow(monedas_selected, cmap='gray')
 plt.axis('off')  # Desactivar los ejes
 plt.title("Filtered Image from Monedas Gray")
 plt.show()
-
-# Ver la matriz de monedas_selected (opcional)
-print(np.unique(monedas_selected))
-
-
-
-
-
-
-
