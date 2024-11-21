@@ -3,7 +3,10 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 
-def imshow(img, new_fig=True, title=None, color_img=False, blocking=False, colorbar=False, ticks=False):
+def imshow(img: np.ndarray, new_fig: bool = True, title: str = None, color_img: bool = False, blocking: bool = False, colorbar: bool = False, ticks: bool = False):
+    """
+    Muestra una imagen en una ventana de matplotlib.
+    """
     if new_fig:
         plt.figure()
     if color_img:
@@ -18,119 +21,156 @@ def imshow(img, new_fig=True, title=None, color_img=False, blocking=False, color
     if new_fig:        
         plt.show(block=blocking)
 
-PATH = os.getcwd()
-DATA_PATH = os.path.join(PATH, 'data')
+def img_reading() -> np.ndarray:
+    """
+    Se encarga de ecargar la imágen
+    """
+    PATH = os.getcwd()
+    DATA_PATH = os.path.join(PATH, 'data')
 
-monedas: np.ndarray =  cv2.imread(os.path.join(DATA_PATH,'monedas.jpg'))
-monedas_gray: np.ndarray = cv2.cvtColor(monedas, cv2.COLOR_BGR2GRAY)
-plt.imshow(monedas_gray, cmap='gray')
-plt.show()
+    img: np.ndarray =  cv2.imread(os.path.join(DATA_PATH,'monedas.jpg'))
+    return img
 
-monedas_blur: np.ndarray = cv2.GaussianBlur(monedas_gray, (3, 3), 0)
+def img_preprocessing(img: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Preprocesa la imagen. Devuelve una tupla de arrays con la imagen en escala de grises 
+    y la imagen el resultado de aplicar un filtro de blur a la imagen en escala de grises.
+    """
+    img_gray: np.ndarray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_blur: np.ndarray = cv2.GaussianBlur(img_gray, (3, 3), 0)
+    return img_gray, img_blur
 
 
-detected_circles = cv2.HoughCircles(monedas_blur,  
-                   cv2.HOUGH_GRADIENT, 1.2, 90, param1 = 65, 
-               param2 = 170, minRadius = 70, maxRadius = 200)     
 
-print(f'Circles detected: {detected_circles}')
+def detect_coins(img: np.ndarray) -> np.ndarray:
+    """
+    Detecta monedas en la imagen.
+    """
+    detected_circles = cv2.HoughCircles(img,  
+                    cv2.HOUGH_GRADIENT, 1.2, 90, param1 = 65, 
+                param2 = 170, minRadius = 70, maxRadius = 200)     
+    return detected_circles
 
-if detected_circles is not None:
-    # Convert the circle parameters a, b and r to integers.
-    detected_circles = np.uint16(np.around(detected_circles))
-    
-    # Copy the image to avoid drawing directly on the original
-    monedas_with_circles = monedas_blur.copy()
-
-    for pt in detected_circles[0, :]:
-        a, b, r = pt[0], pt[1], pt[2]
+def draw_circles(img: np.ndarray, detected_circles: np.ndarray) -> np.ndarray:
+    """
+    Dibuja circulos negros de monedas detectadas.
+    """
+    if detected_circles is not None:
+        detected_circles = np.uint16(np.around(detected_circles))
         
-        cv2.circle(monedas_with_circles, (a, b), r, (0, 0, 0), -1)  # Interior negro
+        monedas_with_circles = img.copy()
 
-        # Draw the circumference of the circle.
-  
-  #      cv2.circle(monedas_with_circles, (a, b), r, (0, 255, 0), 2)
-        
-        # Draw a small circle (of radius 5) to show the center.
- #       cv2.circle(monedas_with_circles, (a, b), 5, (0, 0, 255), 3)
+        for pt in detected_circles[0, :]:
+            a, b, r = pt[0], pt[1], pt[2]
+            
+            cv2.circle(monedas_with_circles, (a, b), r, (0, 0, 0), -1)  # Interior negro
 
+    return monedas_with_circles
 
-# Convert the image from BGR (OpenCV format) to RGB (Matplotlib format)
-#monedas_with_circles_rgb = cv2.cvtColor(monedas_with_circles, cv2.COLOR_BGR2RGB)
+def binarize(img: np.ndarray) -> np.ndarray:
+    """
+    binariza la imágen
+    """
+    _, monedas_negras = cv2.threshold(img, 1, 255, cv2.THRESH_BINARY_INV)
+    return monedas_negras
 
-# Display the result using Matplotlib
-plt.imshow(monedas_with_circles, cmap='gray')
-plt.axis("off")  # Hide the axes
-plt.title("Detected Circles")
-plt.show()
+def filter_components(stats: np.ndarray, labels: np.ndarray, centroids: np.ndarray, th_area: int = 5) -> tuple[int, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Filtra componentes por un área mayor a un valor definido.
+    """
+    filtered_stats = []
+    filtered_indices = []
 
-# Aplicar un umbral para binarizar la imagen
-_, monedas_negras = cv2.threshold(monedas_with_circles, 2, 255, cv2.THRESH_BINARY_INV)
-
-print(monedas_negras)
-
-# Mostrar la imagen binarizada
-plt.imshow(monedas_negras, cmap='gray')
-plt.axis('off')  # Desactivar los ejes
-plt.title("Binarized Image (0 and 1)")
-plt.show()
-
-mask = monedas_negras == 0
-monedas_selected = monedas.copy()
-monedas_selected[~mask] = 0  # Establecer los valores de monedas_selected a 0 donde la máscara es True
-
-# Mostrar la imagen final con solo los píxeles seleccionados de monedas_gray
-plt.imshow(monedas_selected, cmap='gray')
-plt.axis('off')  # Desactivar los ejes
-plt.title("Filtered Image from Monedas Gray")
-plt.show()
-
-monedas_recortes_gray = cv2.cvtColor(monedas_selected, cv2.COLOR_BGR2GRAY)
-plt.imshow(monedas_recortes_gray, cmap='gray')
-plt.axis('off')  # Desactivar los ejes
-plt.title("Filtered Image from Monedas Gray")
-plt.show()
-
-
-monedas_resized: np.ndarray =  cv2.resize(monedas_negras, (1366, 768))
-
-totalLabels, label_ids, values, centroid = cv2.connectedComponentsWithStats(monedas_resized, 4, cv2.CV_32S)
-
-
-for i in range(1, totalLabels): 
+    for i, stat in enumerate(stats):
+        _, _, _, _, area = stat
+        if area >= 5:  
+            filtered_stats.append(stat)
+            filtered_indices.append(i)
     
-      # Area of the component 
-    area = values[i, cv2.CC_STAT_AREA]  
-      
-    if (area > 140) and (area < 400): 
-        # Create a new image for bounding boxes 
-        new_img=monedas.copy() 
-          
-        # Now extract the coordinate points 
-        x1 = values[i, cv2.CC_STAT_LEFT] 
-        y1 = values[i, cv2.CC_STAT_TOP] 
-        w = values[i, cv2.CC_STAT_WIDTH] 
-        h = values[i, cv2.CC_STAT_HEIGHT] 
-          
-        # Coordinate of the bounding box 
-        pt1 = (x1, y1) 
-        pt2 = (x1+ w, y1+ h) 
-        (X, Y) = centroid[i] 
-          
-        # Bounding boxes for each component 
-        cv2.rectangle(new_img,pt1,pt2, 
-                      (0, 255, 0), 3) 
-        cv2.circle(new_img, (int(X), 
-                             int(Y)),  
-                   4, (0, 0, 255), -1) 
-  
-        # Create a new array to show individual component 
-        component = np.zeros(monedas_recortes_gray.shape, dtype="uint8") 
-        componentMask = (label_ids == i).astype("uint8") * 255
-  
-        # Apply the mask using the bitwise operator 
-        component = cv2.bitwise_or(component,componentMask) 
-        output = cv2.bitwise_or(output, componentMask) 
-          
-        # Show the final images 
-        imshow(output) 
+    filtered_stats = np.array(filtered_stats)
+    
+    new_labels = np.zeros_like(labels)
+    
+    for new_label, old_idx in enumerate(filtered_indices, start=1): 
+        new_labels[labels == old_idx] = new_label
+    
+    new_centroids = centroids[filtered_indices]
+    
+    new_num_labels = len(filtered_indices) + 1  
+    
+    return new_num_labels, new_labels, filtered_stats, new_centroids
+
+def get_cuts(img: np.ndarray) -> np.ndarray:
+
+    mask = img == 0
+    monedas_selected = img.copy()
+    monedas_selected[~mask] = 0  # Establecer los valores de monedas_selected a 0 donde la máscara es True
+    return monedas_selected
+
+def coin_classification(img: np.ndarray ,num_labels: int, labels: np.ndarray , stats: np.ndarray, centroids: np.ndarray) -> tuple[int, int, int]:   
+    num_monedas_1: int = 0
+    num_monedas_50_cents: int = 0
+    num_monedas_10_cents: int = 0
+
+    im_color = img.copy()
+    im_color = cv2.resize(im_color, (1366, 768))
+
+    for centroid in centroids:
+        cv2.circle(im_color, tuple(np.int32(centroid)), 0, color=(255,255,255), thickness=-1)
+    for st in stats:
+        if st[4] < 7000:
+            cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(0,255,0),thickness=2)
+            num_monedas_10_cents += 1
+        elif st[4] >= 7000 and st[4] < 9000:
+            cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(0,0,255),thickness=2)
+            num_monedas_1+= 1
+        elif st[4] >= 9000 and st[4] < 12000:
+            cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(255,0,0),thickness=2)
+            num_monedas_50_cents += 1
+
+
+    return num_monedas_1, num_monedas_50_cents, num_monedas_10_cents, im_color
+
+
+#------------------------------------------------------------------------------
+
+def main(show_steps: bool = False) -> None:
+
+    img: np.ndarray = img_reading()
+    img_gray, img_blur = img_preprocessing(img)
+    
+    detected_circles: np.ndarray = detect_coins(img_blur)
+    monedas_with_circles: np.ndarray = draw_circles(img_blur, detected_circles)
+    monedas_negras: np.ndarray = binarize(monedas_with_circles)
+
+    monedas_resized: np.ndarray =  cv2.resize(monedas_negras, (1366, 768))
+    cuts = get_cuts(monedas_negras)
+
+    _, labels, stats, centroids = cv2.connectedComponentsWithStats(monedas_resized, 8, cv2.CV_32S)
+
+    num_labels_filtered, labels_filtered , stats_filtered, centroids_filtered  = filter_components(stats, labels, centroids)
+
+    num_monedas_1, num_monedas_50_cents, num_monedas_10_cents, im_color = coin_classification(img, num_labels_filtered, labels_filtered , stats_filtered, centroids_filtered)
+
+    if show_steps:
+        imshow(img_gray, title='Imágen en escala de grises')
+        imshow(monedas_with_circles, title='Monedas detectadas')
+        imshow(monedas_negras, title='Binarización')
+        imshow(cuts, title='Recortes de la imágen original')
+        imshow(im_color, title='Monedas detectadas por valor')
+    else:
+        cv2.imshow(im_color, 'Monedas detectadas por valor')
+        cv2.waitkey(0)
+        cv2.destroyAllWindows()
+
+    print(f'Cantidad de monedas de $1: {num_monedas_1}')
+    print(f'Cantidad de monedas de $0.50: {num_monedas_50_cents}')
+    print(f'Cantidad de monedas de $0.10: {num_monedas_10_cents}')
+
+
+if __name__ == '__main__':
+    main(False)
+
+
+
+
