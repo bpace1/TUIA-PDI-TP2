@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 
-def imshow(img: np.ndarray, new_fig: bool = True, title: str = None, color_img: bool = False, blocking: bool = False, colorbar: bool = False, ticks: bool = False):
+def imshow(img: np.ndarray, new_fig: bool = True, title: str = None, color_img: bool = False, blocking: bool = True, colorbar: bool = False, ticks: bool = False):
     """
     Muestra una imagen en una ventana de matplotlib.
     """
@@ -100,13 +100,6 @@ def filter_components(stats: np.ndarray, labels: np.ndarray, centroids: np.ndarr
     
     return new_num_labels, new_labels, filtered_stats, new_centroids
 
-def get_cuts(img: np.ndarray) -> np.ndarray:
-
-    mask = img == 0
-    monedas_selected = img.copy()
-    monedas_selected[~mask] = 0  # Establecer los valores de monedas_selected a 0 donde la máscara es True
-    return monedas_selected
-
 def coin_classification(img: np.ndarray ,num_labels: int, labels: np.ndarray , stats: np.ndarray, centroids: np.ndarray) -> tuple[int, int, int]:   
     num_monedas_1: int = 0
     num_monedas_50_cents: int = 0
@@ -134,17 +127,19 @@ def coin_classification(img: np.ndarray ,num_labels: int, labels: np.ndarray , s
 
 #------------------------------------------------------------------------------
 
-def main(show_steps: bool = False) -> None:
+def execute(show_steps: bool = False) -> None:
+    """
+    Ejecución del programa de detección completa.
+    """
 
     img: np.ndarray = img_reading()
     img_gray, img_blur = img_preprocessing(img)
     
     detected_circles: np.ndarray = detect_coins(img_blur)
     monedas_with_circles: np.ndarray = draw_circles(img_blur, detected_circles)
-    monedas_negras: np.ndarray = binarize(monedas_with_circles)
+    monedas_blancas: np.ndarray = binarize(monedas_with_circles)
 
-    monedas_resized: np.ndarray =  cv2.resize(monedas_negras, (1366, 768))
-    cuts = get_cuts(monedas_negras)
+    monedas_resized: np.ndarray =  cv2.resize(monedas_blancas, (1366, 768))
 
     _, labels, stats, centroids = cv2.connectedComponentsWithStats(monedas_resized, 8, cv2.CV_32S)
 
@@ -155,13 +150,11 @@ def main(show_steps: bool = False) -> None:
     if show_steps:
         imshow(img_gray, title='Imágen en escala de grises')
         imshow(monedas_with_circles, title='Monedas detectadas')
-        imshow(monedas_negras, title='Binarización')
-        imshow(cuts, title='Recortes de la imágen original')
-        imshow(im_color, title='Monedas detectadas por valor')
-    else:
-        cv2.imshow(im_color, 'Monedas detectadas por valor')
-        cv2.waitkey(0)
-        cv2.destroyAllWindows()
+        imshow(monedas_blancas, title='Binarización')
+    
+    cv2.imshow('Monedas detectadas por valor', im_color)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
     print(f'Cantidad de monedas de $1: {num_monedas_1}')
     print(f'Cantidad de monedas de $0.50: {num_monedas_50_cents}')
@@ -169,7 +162,7 @@ def main(show_steps: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    main(False)
+    execute(True)
 
 
 
