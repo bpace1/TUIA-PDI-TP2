@@ -3,7 +3,10 @@ import cv2
 import matplotlib.pyplot as plt
 import os
 
-def imshow(img: np.ndarray, new_fig: bool = True, title: str = None, color_img: bool = False, blocking: bool = True, colorbar: bool = False, ticks: bool = False):
+Matlike = np.ndarray
+
+def imshow(img: Matlike, new_fig: bool = True, title: str = None, color_img: bool = False, 
+           blocking: bool = True, colorbar: bool = False, ticks: bool = False):
     """
     Muestra una imagen en una ventana de matplotlib.
     """
@@ -21,28 +24,28 @@ def imshow(img: np.ndarray, new_fig: bool = True, title: str = None, color_img: 
     if new_fig:        
         plt.show(block=blocking)
 
-def img_reading() -> np.ndarray:
+def img_reading() -> Matlike:
     """
     Se encarga de ecargar la imágen
     """
     PATH = os.getcwd()
     DATA_PATH = os.path.join(PATH, 'data')
 
-    img: np.ndarray =  cv2.imread(os.path.join(DATA_PATH,'monedas.jpg'))
+    img: Matlike =  cv2.imread(os.path.join(DATA_PATH,'monedas.jpg'))
     return img
 
-def img_preprocessing(img: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def img_preprocessing(img: Matlike) -> tuple[Matlike, Matlike]:
     """
     Preprocesa la imagen. Devuelve una tupla de arrays con la imagen en escala de grises 
     y la imagen el resultado de aplicar un filtro de blur a la imagen en escala de grises.
     """
-    img_gray: np.ndarray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img_blur: np.ndarray = cv2.GaussianBlur(img_gray, (3, 3), 0)
+    img_gray: Matlike = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img_blur: Matlike = cv2.GaussianBlur(img_gray, (3, 3), 0)
     return img_gray, img_blur
 
 
 
-def detect_coins(img: np.ndarray) -> np.ndarray:
+def detect_coins(img: Matlike) -> Matlike:
     """
     Detecta monedas en la imagen.
     """
@@ -51,7 +54,7 @@ def detect_coins(img: np.ndarray) -> np.ndarray:
                 param2 = 170, minRadius = 70, maxRadius = 200)     
     return detected_circles
 
-def draw_circles(img: np.ndarray, detected_circles: np.ndarray) -> np.ndarray:
+def draw_circles(img: Matlike, detected_circles: Matlike) -> Matlike:
     """
     Dibuja circulos negros de monedas detectadas.
     """
@@ -67,19 +70,19 @@ def draw_circles(img: np.ndarray, detected_circles: np.ndarray) -> np.ndarray:
 
     return monedas_with_circles
 
-def binarize(img: np.ndarray) -> np.ndarray:
+def binarize(img: Matlike) -> Matlike:
     """
     binariza la imágen
     """
     _, monedas_negras = cv2.threshold(img, 1, 255, cv2.THRESH_BINARY_INV)
     return monedas_negras
 
-def filter_components(stats: np.ndarray, labels: np.ndarray, centroids: np.ndarray, th_area: int = 5) -> tuple[int, np.ndarray, np.ndarray, np.ndarray]:
+def filter_components(stats: Matlike, labels: Matlike, centroids: Matlike, th_area: int = 5) -> tuple[int, Matlike, Matlike, Matlike]:
     """
     Filtra componentes por un área mayor a un valor definido.
     """
-    filtered_stats = []
-    filtered_indices = []
+    filtered_stats: list[Matlike] = []
+    filtered_indices: list[int] = []
 
     for i, stat in enumerate(stats):
         _, _, _, _, area = stat
@@ -100,7 +103,7 @@ def filter_components(stats: np.ndarray, labels: np.ndarray, centroids: np.ndarr
     
     return new_num_labels, new_labels, filtered_stats, new_centroids
 
-def coin_classification(img: np.ndarray ,num_labels: int, labels: np.ndarray , stats: np.ndarray, centroids: np.ndarray) -> tuple[int, int, int]:   
+def coin_classification(img: Matlike ,num_labels: int, labels: Matlike , stats: Matlike, centroids: Matlike) -> tuple[int, int, int]:   
     num_monedas_1: int = 0
     num_monedas_50_cents: int = 0
     num_monedas_10_cents: int = 0
@@ -132,14 +135,14 @@ def execute(show_steps: bool = False) -> None:
     Ejecución del programa de detección completa.
     """
 
-    img: np.ndarray = img_reading()
+    img: Matlike = img_reading()
     img_gray, img_blur = img_preprocessing(img)
     
-    detected_circles: np.ndarray = detect_coins(img_blur)
-    monedas_with_circles: np.ndarray = draw_circles(img_blur, detected_circles)
-    monedas_blancas: np.ndarray = binarize(monedas_with_circles)
+    detected_circles: Matlike = detect_coins(img_blur)
+    monedas_with_circles: Matlike = draw_circles(img_blur, detected_circles)
+    monedas_blancas: Matlike = binarize(monedas_with_circles)
 
-    monedas_resized: np.ndarray =  cv2.resize(monedas_blancas, (1366, 768))
+    monedas_resized: Matlike =  cv2.resize(monedas_blancas, (1366, 768))
 
     _, labels, stats, centroids = cv2.connectedComponentsWithStats(monedas_resized, 8, cv2.CV_32S)
 
