@@ -174,8 +174,8 @@ def normalize_coordinates(stats: list[Matlike], img_shape: tuple[int, int]) -> l
     return normalized_stats
 
 def execute(show_steps: bool = True) -> None:
-    dir: list[str] = os.listdir(os.path.join(os.getcwd(), 'data'))
-    patentes: list[str] = [dir for dir in dir if dir.startswith('img')]
+    dir_: list[str] = os.listdir(os.path.join(os.getcwd(), 'data'))
+    patentes: list[str] = [dir_ for dir_ in dir_ if dir_.startswith('img')]
 
     for image_path in patentes:
         img: Matlike = img_reading(image_path)
@@ -190,7 +190,7 @@ def execute(show_steps: bool = True) -> None:
         if show_steps:
             imshow(img_top_hat, title="Imagen procesada con Top-Hat")
             imshow(img_thresh, title="Umbralado")
-
+        
         for st in letter_stats:
             x, y, w, h = int(st["x"] * img.shape[1]), int(st["y"] * img.shape[0]), \
                          int(st["width"] * img.shape[1]), int(st["height"] * img.shape[0])
