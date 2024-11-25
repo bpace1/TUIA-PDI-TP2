@@ -27,9 +27,9 @@ pip3 install -r requirements.txt
 ```bash
 python -m venv .venv
 
-pip install -r requirements.txt
-
 .\.venv\Scripts\activate
+
+pip install -r requirements.txt
 ```
 
 ## Ejecución
