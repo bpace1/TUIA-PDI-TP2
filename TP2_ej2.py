@@ -43,16 +43,14 @@ def img_procesor(img: Matlike) -> tuple[Matlike, Matlike]:
     Función procesadora de la imágen.
     Se aplica 'Top-Hat' y un umbral  
     """  
-    #erosion: Matlike = cv2.erode(img, kernel=np.ones((1,1),np.uint8), iterations=1)
-    #blur: Matlike = cv2.GaussianBlur(erosion, (1, 1), 0)
 
-    se: Matlike = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))    
+    se: Matlike = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 7))    
 
     img_top_hat: Matlike = cv2.morphologyEx(img, kernel=se, op=cv2.MORPH_TOPHAT)
     img_top_hat_normalized: Matlike = cv2.normalize(img_top_hat, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
-    #_, img_thresh = cv2.threshold(img_top_hat, 80, 255, cv2.THRESH_BINARY)
-    _, img_thresh = cv2.threshold(img_top_hat_normalized, 75, 255, cv2.THRESH_BINARY)
+    _, img_thresh = cv2.threshold(img_top_hat_normalized, 100, 255, cv2.THRESH_BINARY)
+    #_, img_thresh = cv2.threshold(img_top_hat_normalized, 75, 255, cv2.THRESH_BINARY)
     
     return img_top_hat, img_thresh
 
@@ -70,10 +68,10 @@ def filter_components(  stats: np.ndarray) -> tuple[int, np.ndarray, np.ndarray,
         y aquellas ubicadas dentro de un rango en la coordenada y 
     """
     aspect_min = 1.3
-    aspect_max = 2.8
+    aspect_max = 5
 
     area_min = 15  
-    area_max = 100
+    area_max = 150
 
     stats_by_aspect = []
     
@@ -116,7 +114,7 @@ def object_detector(img_thresh: Matlike) -> tuple[list[Matlike], Matlike]:
     Por medio de filter_components() se filtran los componentes pertenecientes a las letras de las patentes
     """
    
-    connectivity = 8
+    connectivity = 10
     _, _, stats, _ = cv2.connectedComponentsWithStats(img_thresh, connectivity, cv2.CV_32S)  
    
     letters_stats = filter_components(stats)
