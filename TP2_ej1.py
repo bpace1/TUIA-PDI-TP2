@@ -315,27 +315,20 @@ def execute(show_steps: bool = False) -> None:
     monedas_blancas: Matlike = binarize(monedas_with_circles)
     monedas_resized: Matlike = cv2.resize(monedas_blancas, (1366, 768))
 
-
     _, labels, stats, centroids = cv2.connectedComponentsWithStats(monedas_resized, 8, cv2.CV_32S)
     num_labels_filtered, labels_filtered, stats_filtered, centroids_filtered = filter_components(stats, labels, centroids)
     num_monedas_1, num_monedas_50_cents, num_monedas_10_cents, im_color = coin_classification(img, num_labels_filtered, labels_filtered, stats_filtered, centroids_filtered)
 
     if show_steps:
-        imshow(img, title='Imagen')
         imshow(img_gray, title='Escala de Grises')
-        imshow(img_blur, title='Blur')
         imshow(monedas_with_circles, title='Círculos Detectados')
         imshow(monedas_blancas, title='Binarización')
 
     print(f'Cantidad de monedas de $1: {num_monedas_1}')
     print(f'Cantidad de monedas de $0.50: {num_monedas_50_cents}')
     print(f'Cantidad de monedas de $0.10: {num_monedas_10_cents}')
-
-    cv2.imshow('Monedas detectadas por valor', im_color)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
     
-    img_preprocesada = procesar_imagen_para_deteccion(img)
+    img_preprocesada = procesar_imagen_para_deteccion(img_reading())
     
     _, thresh_image = cv2.threshold(img_preprocesada, 60, 255, cv2.THRESH_BINARY)
     
@@ -348,7 +341,7 @@ def execute(show_steps: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    execute(True)
+    execute(False)
 
 
 
