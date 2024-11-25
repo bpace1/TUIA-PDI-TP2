@@ -6,6 +6,8 @@ from typing import List, Tuple
 
 Matlike = np.ndarray
 
+draw_final = None
+
 def imshow(img: Matlike, new_fig: bool = True, title: str = None, color_img: bool = False, 
            blocking: bool = True, colorbar: bool = False, ticks: bool = False):
     """
@@ -58,6 +60,8 @@ def draw_circles(img: Matlike, detected_circles: Matlike) -> Matlike:
     """
     Dibuja circulos negros de monedas detectadas.
     """
+    global draw_final
+    
     if detected_circles is not None:
         detected_circles = np.uint16(np.around(detected_circles))
         
@@ -66,6 +70,7 @@ def draw_circles(img: Matlike, detected_circles: Matlike) -> Matlike:
         for pt in detected_circles[0, :]:
             a, b, r = pt[0], pt[1], pt[2]
             
+            cv2.circle(draw_final, (a, b), r, (0, 0, 255), 5)  # Interior negro
             cv2.circle(monedas_with_circles, (a, b), r, (0, 0, 0), -1)  # Interior negro
 
     return monedas_with_circles
@@ -104,6 +109,8 @@ def filter_components(stats: Matlike, labels: Matlike, centroids: Matlike, th_ar
     return new_num_labels, new_labels, filtered_stats, new_centroids
 
 def coin_classification(img: Matlike ,num_labels: int, labels: Matlike , stats: Matlike, centroids: Matlike) -> tuple[int, int, int]:   
+    global draw_final
+    
     num_monedas_1: int = 0
     num_monedas_50_cents: int = 0
     num_monedas_10_cents: int = 0
@@ -113,15 +120,19 @@ def coin_classification(img: Matlike ,num_labels: int, labels: Matlike , stats: 
 
     for centroid in centroids:
         cv2.circle(im_color, tuple(np.int32(centroid)), 0, color=(255,255,255), thickness=-1)
+        cv2.circle(draw_final, tuple(np.int32(centroid)), 0, color=(0,0,255), thickness=9)
     for st in stats:
         if st[4] < 7000:
             cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(0,255,0),thickness=2)
+            cv2.putText(draw_final, "10 C", (st[0] - 10, st[1]- 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             num_monedas_10_cents += 1
         elif st[4] >= 7000 and st[4] < 9000:
             cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(0,0,255),thickness=2)
+            cv2.putText(draw_final, "1 P", (st[0] - 10, st[1]- 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             num_monedas_1+= 1
         elif st[4] >= 9000 and st[4] < 12000:
             cv2.rectangle(im_color,(st[0],st[1]),(st[0]+st[2],st[1]+st[3]),color=(255,0,0),thickness=2)
+            cv2.putText(draw_final, "50 C", (st[0] - 10, st[1]- 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
             num_monedas_50_cents += 1
 
 
@@ -252,6 +263,8 @@ def contar_circulos(dados: list[np.array], thresh_img: Matlike) -> tuple[dict[st
         - dict_dados (dict[str, int]): Diccionario con los puntajes de cada dado.
         - puntaje_total (int): Puntaje total sumando los puntajes de todos los dados.
     """
+    global draw_final
+    
     dict_dados = {}
     puntaje_total = 0
     dado_n: int = 1
@@ -292,7 +305,6 @@ def contar_circulos(dados: list[np.array], thresh_img: Matlike) -> tuple[dict[st
             circles = np.round(circles[0, :]).astype("int")
             for (cx, cy, r) in circles:
                 puntaje_dado += 1
-                
                 cv2.circle(dibujar, (cx, cy), r, (0, 255, 0), 1)
                 
         imshow(dibujar, title="Resultados círculos")
@@ -301,32 +313,50 @@ def contar_circulos(dados: list[np.array], thresh_img: Matlike) -> tuple[dict[st
         puntaje_total += puntaje_dado
 
         dado_n += 1
-    
+        
+        text_x = x + w + 5 
+        text_y = y + 20 
+
+        draw_final = cv2.putText(draw_final, f"Puntaje: {puntaje_total}", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+        draw_final = cv2.rectangle(draw_final, (x, y), (x+w, y+h), (0, 0, 255), 2)
+        
     return dict_dados, puntaje_total
 
 def execute(show_steps: bool = False) -> None:
     """
     Ejecución completa de la detección de monedas y dados, incluyendo el cálculo de puntajes.
     """
+    global draw_final
+    
     img: Matlike = img_reading()
     img_gray, img_blur = img_preprocessing(img)
     detected_circles: Matlike = detect_coins(img_blur)
     monedas_with_circles: Matlike = draw_circles(img_blur, detected_circles)
     monedas_blancas: Matlike = binarize(monedas_with_circles)
     monedas_resized: Matlike = cv2.resize(monedas_blancas, (1366, 768))
+    
+    draw_final = cv2.resize(draw_final, (1366, 768))
 
     _, labels, stats, centroids = cv2.connectedComponentsWithStats(monedas_resized, 8, cv2.CV_32S)
     num_labels_filtered, labels_filtered, stats_filtered, centroids_filtered = filter_components(stats, labels, centroids)
     num_monedas_1, num_monedas_50_cents, num_monedas_10_cents, im_color = coin_classification(img, num_labels_filtered, labels_filtered, stats_filtered, centroids_filtered)
 
     if show_steps:
+        imshow(img, title='Imagen')
         imshow(img_gray, title='Escala de Grises')
+        imshow(img_blur, title='Blur')
         imshow(monedas_with_circles, title='Círculos Detectados')
         imshow(monedas_blancas, title='Binarización')
+        imshow(im_color, 'Monedas detectadas por valor')
 
     print(f'Cantidad de monedas de $1: {num_monedas_1}')
     print(f'Cantidad de monedas de $0.50: {num_monedas_50_cents}')
     print(f'Cantidad de monedas de $0.10: {num_monedas_10_cents}')
+   
+    
+    draw_final = cv2.resize(draw_final, (img.shape[1], img.shape[0]))
+    draw_final = cv2.resize(draw_final, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
     
     img_preprocesada = procesar_imagen_para_deteccion(img_reading())
     
@@ -341,8 +371,13 @@ def execute(show_steps: bool = False) -> None:
 
 
 if __name__ == '__main__':
-    execute(False)
+    # Draw final nos sirve para ir dibujando cada proceso del script
+    draw_final = img_reading()
+    
+    execute(True)
 
+    cv2.imshow("Imagen Final", cv2.resize(draw_final, (draw_final.shape[1]//3, draw_final.shape[0]//3)))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-
-
+    cv2.imwrite(filename=os.path.join(os.getcwd(), 'data', 'final.jpg'), img=draw_final)    
