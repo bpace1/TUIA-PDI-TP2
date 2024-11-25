@@ -195,7 +195,6 @@ def procesar_imagen_para_deteccion(img: Matlike) -> np.ndarray:
     # Abrir las formas (separar figuras que se unieron durante el cierre)
     imagen_abierta: np.array = cv2.morphologyEx(imagen_cerrada.copy(), cv2.MORPH_OPEN, estructura, iterations=9)
     
-    imshow(imagen_abierta, title="Imagen Preprocesada")
 
     return imagen_abierta
 
