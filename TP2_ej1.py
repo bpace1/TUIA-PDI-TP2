@@ -176,7 +176,16 @@ def procesar_imagen_para_deteccion(img: Matlike) -> np.ndarray:
 
     imagen_gris = cv2.cvtColor(imagen_modificada_bgr, cv2.COLOR_BGR2GRAY)
 
+    cv2.imshow("Imagen Final", cv2.resize(imagen_modificada_bgr,
+                                          (imagen_modificada_bgr.shape[1]//2, imagen_modificada_bgr.shape[0]//2)))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    imshow(imagen_gris, title="Imagen Preprocesada Gris")
+
     _, imagen_umbralizada = cv2.threshold(imagen_gris, 63, 255, cv2.THRESH_BINARY)
+
+    imshow(imagen_umbralizada, title="Imagen con umbral")
 
     num_etiquetas, etiquetas, estadisticas, _ = cv2.connectedComponentsWithStats(imagen_umbralizada, connectivity=8)
 
@@ -379,4 +388,4 @@ if __name__ == '__main__':
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    cv2.imwrite(filename=os.path.join(os.getcwd(), 'data', 'final.jpg'), img=draw_final)    
+    cv2.imwrite(filename=os.path.join(os.getcwd(), 'data', 'final.jpg'), img=draw_final)

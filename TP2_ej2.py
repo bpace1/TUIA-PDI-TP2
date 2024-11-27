@@ -122,7 +122,7 @@ def object_detector(img_thresh: Matlike) -> tuple[list[Matlike], Matlike]:
     return letters_stats
 
 
-def proccess_plotter(img, img_top_hat, img_thresh, letter_stats, show: bool =False):
+def proccess_plotter(img, img_top_hat, img_thresh, letter_stats, show: bool = False):
 
     img_copy = img.copy()
     img_copy = cv2.cvtColor(img_copy, cv2.COLOR_GRAY2BGR)
@@ -176,7 +176,6 @@ def execute(show_steps: bool = True) -> None:
 
 def show_process():
     try:
-        
         respuesta = input("Bienvenido al detector de patentes.\n¿Le gustaría ver el proceso completo? (S/N): ").strip().upper()        
         
         if respuesta not in ["S", "N"]:
